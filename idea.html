@@ -32,6 +32,9 @@ var SCALE_FACTOR = 1.2;
 
 fabric.Image.fromURL('floor.png', function(img) {
 	  // add image onto canvas
+	  img.hasControls = false;
+	  img.lockMovementX = true;
+	  img.lockMovementY = true;
 	  canvas.add(img);
 
 	  // everything else needs to be added AFTER IMAGE else not visible
