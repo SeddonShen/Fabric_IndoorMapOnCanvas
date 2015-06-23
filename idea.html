@@ -44,8 +44,11 @@ function initFloorCanvas()
 
         // create grid
         var linesCount = GRID_DIMENSIONS / GRID_STEP_GRANULARITY;
+
         for (var lineIndex = 0; lineIndex < linesCount; lineIndex++) {
+
           floorCanvas.add(new fabric.Line([ lineIndex * GRID_STEP_GRANULARITY, 0, lineIndex * GRID_STEP_GRANULARITY, GRID_DIMENSIONS], { stroke: '#ccc', selectable: false }));
+
           floorCanvas.add(new fabric.Line([ 0, lineIndex * GRID_STEP_GRANULARITY, GRID_DIMENSIONS, lineIndex * GRID_STEP_GRANULARITY], { stroke: '#ccc', selectable: false }))
         }
 
@@ -69,6 +72,23 @@ function initFloorCanvas()
         left: gridFittedCoordinates.left,
         top: gridFittedCoordinates.top
       });
+    });
+
+    floorCanvas.on('mouse:down', function(options) {
+
+        var cellClickedLeft = Math.trunc(options.e.layerX / scaledGridStep) * scaledGridStep;
+        var cellClickedTop = Math.trunc(options.e.layerY / scaledGridStep) * scaledGridStep;
+
+      floorCanvas.add(new fabric.Rect({ 
+        left: cellClickedLeft, 
+        top: cellClickedTop, 
+        width: scaledGridStep, 
+        height: scaledGridStep, 
+        fill: '#aaa', 
+        originX: 'left', 
+        originY: 'top',
+        hasControls: false
+        }));
     });
 
     $("#btnZoomIn").click(function(){
