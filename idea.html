@@ -79,16 +79,20 @@ function initFloorCanvas()
         var cellClickedLeft = Math.trunc(options.e.layerX / scaledGridStep) * scaledGridStep;
         var cellClickedTop = Math.trunc(options.e.layerY / scaledGridStep) * scaledGridStep;
 
-      floorCanvas.add(new fabric.Rect({ 
-        left: cellClickedLeft, 
-        top: cellClickedTop, 
-        width: scaledGridStep, 
-        height: scaledGridStep, 
-        fill: '#aaa', 
-        originX: 'left', 
-        originY: 'top',
-        hasControls: false
-        }));
+        var noObjectToDrag = getObjectsWithinCell(cellClickedLeft, cellClickedTop).length === 0;
+        if (noObjectToDrag)
+        {
+            floorCanvas.add(new fabric.Rect({ 
+                left: cellClickedLeft, 
+                top: cellClickedTop, 
+                width: scaledGridStep, 
+                height: scaledGridStep, 
+                fill: '#aaa', 
+                originX: 'left', 
+                originY: 'top',
+                hasControls: false
+            }));
+        }
     });
 
     $("#btnZoomIn").click(function(){
@@ -149,6 +153,18 @@ function getScaledCellCoordinates(left, top)
     squaredCoordinates.left = Math.round(left / scaledGridStep) * scaledGridStep;
     squaredCoordinates.top = Math.round(top / scaledGridStep) * scaledGridStep;
     return squaredCoordinates;
+}
+
+function getObjectsWithinCell(left, top)
+{
+    var objectsOnCanvas = floorCanvas.getObjects();
+
+    // because we're working on a grid, no need to use a rectangle to find existing objects
+    var objectsWithinCell = _.filter(objectsOnCanvas, function(object){
+        return object.left === left && object.top === top;
+    });
+
+    return objectsWithinCell;
 }
 
 initFloorCanvas();
