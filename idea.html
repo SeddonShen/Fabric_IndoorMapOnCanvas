@@ -24,60 +24,65 @@ var GRID_DIMENSIONS = 800;
 var scaleFactorApplied = 1;
 var currentCanvasScale = 1;
 var SCALE_MULTIPLYING_FACTOR = 1.2;
+var floorCanvas;
 
-var canvas = new fabric.Canvas('floorDemoCanvas', { selection: false });
+function initFloorCanvas()
+{
+    floorCanvas = new fabric.Canvas('floorDemoCanvas', { selection: false });
 
-fabric.Image.fromURL('floor.png', function(img) {
-	  
-	  img.hasControls = false;
-	  img.lockMovementX = true;
-	  img.lockMovementY = true;
+    fabric.Image.fromURL('floor.png', function(img) {
+          
+          // the image should react as a background image
+          // it is added as an object so that it can get scaled when zoomed in
+          img.hasControls = false;
+          img.lockMovementX = true;
+          img.lockMovementY = true;
 
-	  canvas.add(img);
+          floorCanvas.add(img);
 
-	  // everything else needs to be added AFTER IMAGE else not visible
+          // everything else needs to be added AFTER IMAGE else not visible
 
-  	// create grid
-    var linesCount = GRID_DIMENSIONS / GRID_STEP_GRANULARITY;
-	for (var lineIndex = 0; lineIndex < linesCount; lineIndex++) {
-	  canvas.add(new fabric.Line([ lineIndex * GRID_STEP_GRANULARITY, 0, lineIndex * GRID_STEP_GRANULARITY, GRID_DIMENSIONS], { stroke: '#ccc', selectable: false }));
-	  canvas.add(new fabric.Line([ 0, lineIndex * GRID_STEP_GRANULARITY, GRID_DIMENSIONS, lineIndex * GRID_STEP_GRANULARITY], { stroke: '#ccc', selectable: false }))
-	}
+        // create grid
+        var linesCount = GRID_DIMENSIONS / GRID_STEP_GRANULARITY;
+        for (var lineIndex = 0; lineIndex < linesCount; lineIndex++) {
+          floorCanvas.add(new fabric.Line([ lineIndex * GRID_STEP_GRANULARITY, 0, lineIndex * GRID_STEP_GRANULARITY, GRID_DIMENSIONS], { stroke: '#ccc', selectable: false }));
+          floorCanvas.add(new fabric.Line([ 0, lineIndex * GRID_STEP_GRANULARITY, GRID_DIMENSIONS, lineIndex * GRID_STEP_GRANULARITY], { stroke: '#ccc', selectable: false }))
+        }
 
-	canvas.add(new fabric.Rect({ 
-	  left: 100, 
-	  top: 100, 
-	  width: GRID_STEP_GRANULARITY, 
-	  height: GRID_STEP_GRANULARITY, 
-	  fill: '#faa', 
-	  originX: 'left', 
-	  originY: 'top',
-	    hasControls: false
-	}));
-});
+        floorCanvas.add(new fabric.Rect({ 
+          left: 100, 
+          top: 100, 
+          width: GRID_STEP_GRANULARITY, 
+          height: GRID_STEP_GRANULARITY, 
+          fill: '#faa', 
+          originX: 'left', 
+          originY: 'top',
+            hasControls: false
+        }));
+    });
 
-// snap to grid
-canvas.on('object:moving', function(options) {
-    var squareMoveLeftCoordinate = Math.round(options.target.left / scaledGridStep) * scaledGridStep;
-    var squareMoveTopCoordinate = Math.round(options.target.top / scaledGridStep) * scaledGridStep;
-    
-  options.target.set({
-    left: squareMoveLeftCoordinate,
-    top: squareMoveTopCoordinate
-  });
-});
+    // snap to grid
+    floorCanvas.on('object:moving', function(options) {
+        var gridFittedCoordinates = getScaledCellCoordinates(options.target.left, options.target.top);
+        
+      options.target.set({
+        left: gridFittedCoordinates.left,
+        top: gridFittedCoordinates.top
+      });
+    });
 
-$("#btnZoomIn").click(function(){
-    zoomIn();
-});
+    $("#btnZoomIn").click(function(){
+        zoomIn();
+    });
 
-$("#btnZoomOut").click(function(){
-    zoomOut();
-});
+    $("#btnZoomOut").click(function(){
+        zoomOut();
+    });
 
-$("#btnResetZoom").click(function(){
-    resetZoom();
-});
+    $("#btnResetZoom").click(function(){
+        resetZoom();
+    });
+}
 
 function zoomIn() {
     applyScaleToGridAndObjects(SCALE_MULTIPLYING_FACTOR);
@@ -100,10 +105,10 @@ function applyScaleToGridAndObjects(scaleValue)
     currentCanvasScale = currentCanvasScale * scaleValue;
     scaledGridStep = scaledGridStep * scaleValue;
 
-    canvas.setHeight(canvas.getHeight() * scaleValue);
-    canvas.setWidth(canvas.getWidth() * scaleValue);
+    floorCanvas.setHeight(floorCanvas.getHeight() * scaleValue);
+    floorCanvas.setWidth(floorCanvas.getWidth() * scaleValue);
     
-    var objectsOnCanvas = canvas.getObjects();
+    var objectsOnCanvas = floorCanvas.getObjects();
 
     _.each(objectsOnCanvas, function(object){
 
@@ -115,8 +120,18 @@ function applyScaleToGridAndObjects(scaleValue)
         object.setCoords();
     });
         
-    canvas.renderAll();
+    floorCanvas.renderAll();
 }
+
+function getScaledCellCoordinates(left, top)
+{
+    var squaredCoordinates = {};
+    squaredCoordinates.left = Math.round(left / scaledGridStep) * scaledGridStep;
+    squaredCoordinates.top = Math.round(top / scaledGridStep) * scaledGridStep;
+    return squaredCoordinates;
+}
+
+initFloorCanvas();
 
 </script>
 </html>
