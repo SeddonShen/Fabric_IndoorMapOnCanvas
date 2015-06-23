@@ -112,7 +112,7 @@ FloorCanvasMap.prototype.init = function(usedForReporting)
 
         if ((gridFittedCoordinates.top + self.scaledGridStep) >= self.floorCanvas.height)
         {
-            gridFittedCoordinates.top = self.floorCanvas.height - self.self.scaledGridStep;
+            gridFittedCoordinates.top = self.floorCanvas.height - self.scaledGridStep;
         }
     
         options.target.set({
@@ -164,7 +164,7 @@ FloorCanvasMap.prototype.init = function(usedForReporting)
         }
         else
         {
-            self.changePinColor(objectsToDrag[0], COLOR_CATEGORY_3);
+            self.changePinColor(objectsToDrag[0], self.COLOR_CATEGORY_3);
         }
     });
 
@@ -228,8 +228,8 @@ FloorCanvasMap.prototype.addPinOnGrid = function(left, top)
         fill: self.COLOR_CATEGORY_1, 
         originX: 'left', 
         originY: 'top',
-        hasControls: false,
-        angle: 45
+        hasControls: false//,
+        //angle: 45
     });
 
     self.floorCanvas.add(pin);
@@ -321,7 +321,7 @@ FloorCanvasMap.prototype.getObjectsWithinCell = function(left, top)
 }
 
 var map = new FloorCanvasMap();
-map.init(false);
+map.init(true);
 
 </script>
 </html>
