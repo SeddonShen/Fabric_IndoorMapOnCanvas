@@ -20,16 +20,19 @@ canvas {
 
 <script>
 var scaledGridStep = GRID_STEP_GRANULARITY = 10;
+var DEFAULT_MAX_PINS_ALLOWED = 1000;
 var GRID_DIMENSIONS = 800;
 var scaleFactorApplied = 1;
 var currentCanvasScale = 1;
 var SCALE_MULTIPLYING_FACTOR = 1.2;
 var floorCanvas;
-var MAX_RECTANGLES_ALLOWED = 3;
+var maxPinsAllowed = 3;
 var rectanglesCount = 0;
 var selectedPin;
 var selectedOldScaleX;
 var selectedOldScaleY;
+
+var isReportingMode = false;
 
 var COLOR_CATEGORY_1 = '#00FF00';
 var COLOR_CATEGORY_2 = '#FF00FF';
@@ -37,11 +40,22 @@ var COLOR_CATEGORY_3 = 'red';
 
 var arrayOfPins = [];
 
-function initFloorCanvas()
+function initFloorCanvas(usedForReporting)
 {
+    isReportingMode = usedForReporting;
+
+    if (!isReportingMode)
+    {
+        maxPinsAllowed = 1;
+    }
+    else
+    {
+        maxPinsAllowed = DEFAULT_MAX_PINS_ALLOWED;
+    }
+
     floorCanvas = new fabric.Canvas('floorDemoCanvas', { selection: false });
 
-    fabric.Image.fromURL('floor.png', function(img) {
+    fabric.Image.fromURL('floor1.png', function(img) {
           
           // the image should react as a background image
           // it is added as an object so that it can get scaled when zoomed in
@@ -50,6 +64,12 @@ function initFloorCanvas()
           img.lockMovementY = true;
 
           floorCanvas.add(img);
+
+          if (isReportingMode)
+          {
+            // cannot add new pins, they are restored from DB
+            addPinOnGrid(scaledGridStep,scaledGridStep);
+          }
 
           // everything else needs to be added AFTER IMAGE else not visible
 
@@ -97,19 +117,22 @@ function initFloorCanvas()
     });
 
     floorCanvas.on('object:selected', function(options) {
-        // either other pin selected or selection cleared
-        // selection:cleared will not happen because floor map will get selected
-        resetSelectedPin();
-
-        if (options.target.type === "rect")
+        if (isReportingMode)
         {
+            // either other pin selected or selection cleared
+            // selection:cleared will not happen because floor map will get selected
+            resetSelectedPin();
 
-            selectedPin = options.target;
-            selectedOldScaleX = selectedPin.scaleX;
-            selectedOldScaleY = selectedPin.scaleY;
-            selectedPin.scaleX = 2;
-            selectedPin.scaleY = 2;
-            selectedPin.borderColor = 'blue';
+            if (options.target.type === "rect")
+            {
+
+                selectedPin = options.target;
+                selectedOldScaleX = selectedPin.scaleX;
+                selectedOldScaleY = selectedPin.scaleY;
+                selectedPin.scaleX = 2;
+                selectedPin.scaleY = 2;
+                selectedPin.borderColor = 'blue';
+            }
         }
     });
 
@@ -127,7 +150,6 @@ function initFloorCanvas()
     }
 
     floorCanvas.on('mouse:down', function(options) {
-
         var cellClickedLeft = Math.trunc(options.e.layerX / scaledGridStep) * scaledGridStep;
         var cellClickedTop = Math.trunc(options.e.layerY / scaledGridStep) * scaledGridStep;
 
@@ -135,13 +157,16 @@ function initFloorCanvas()
         var noObjectToDrag = (objectsToDrag.length === 0);
         if (noObjectToDrag)
         {
-            if (rectanglesCount < MAX_RECTANGLES_ALLOWED)
+            if (!isReportingMode)
             {
-                addPinOnGrid(cellClickedLeft, cellClickedTop);
-            }
-            else
-            {
-                console.log('Max amount of pins allowed was reached');
+                if (rectanglesCount < maxPinsAllowed)
+                {
+                    addPinOnGrid(cellClickedLeft, cellClickedTop);
+                }
+                else
+                {
+                    console.log('Max amount of pins allowed was reached');
+                }
             }
         }
         else
@@ -276,7 +301,7 @@ function getObjectsWithinCell(left, top)
     return objectsWithinCell;
 }
 
-initFloorCanvas();
+initFloorCanvas(true);
 
 </script>
 </html>
