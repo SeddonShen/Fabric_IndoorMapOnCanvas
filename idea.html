@@ -28,6 +28,10 @@ var floorCanvas;
 var MAX_RECTANGLES_ALLOWED = 3;
 var rectanglesCount = 0;
 
+var COLOR_CATEGORY_1 = '#faa';
+var COLOR_CATEGORY_2 = '#ert';
+var COLOR_CATEGORY_3 = '#ccc';
+
 function initFloorCanvas()
 {
     floorCanvas = new fabric.Canvas('floorDemoCanvas', { selection: false });
@@ -53,28 +57,36 @@ function initFloorCanvas()
 
           floorCanvas.add(new fabric.Line([ 0, lineIndex * GRID_STEP_GRANULARITY, GRID_DIMENSIONS, lineIndex * GRID_STEP_GRANULARITY], { stroke: '#ccc', selectable: false }))
         }
-
-        floorCanvas.add(new fabric.Rect({ 
-          left: 100, 
-          top: 100, 
-          width: GRID_STEP_GRANULARITY, 
-          height: GRID_STEP_GRANULARITY, 
-          fill: '#faa', 
-          originX: 'left', 
-          originY: 'top',
-            hasControls: false
-        }));
-        rectanglesCount++;
     });
 
     // snap to grid
     floorCanvas.on('object:moving', function(options) {
         var gridFittedCoordinates = getScaledCellCoordinates(options.target.left, options.target.top);
-        
-      options.target.set({
-        left: gridFittedCoordinates.left,
-        top: gridFittedCoordinates.top
-      });
+
+        if (gridFittedCoordinates.left < 0)
+        {
+            gridFittedCoordinates.left = 0;
+        }
+
+        if (gridFittedCoordinates.top < 0)
+        {
+            gridFittedCoordinates.top = 0;
+        }
+
+        if ((gridFittedCoordinates.left + scaledGridStep) >= floorCanvas.width)
+        {
+            gridFittedCoordinates.left = floorCanvas.width - scaledGridStep;
+        }
+
+        if ((gridFittedCoordinates.top + scaledGridStep) >= floorCanvas.height)
+        {
+            gridFittedCoordinates.top = floorCanvas.height - scaledGridStep;
+        }
+    
+        options.target.set({
+            left: gridFittedCoordinates.left,
+            top: gridFittedCoordinates.top
+        });
     });
 
     floorCanvas.on('mouse:down', function(options) {
@@ -82,24 +94,47 @@ function initFloorCanvas()
         var cellClickedLeft = Math.trunc(options.e.layerX / scaledGridStep) * scaledGridStep;
         var cellClickedTop = Math.trunc(options.e.layerY / scaledGridStep) * scaledGridStep;
 
-        var noObjectToDrag = getObjectsWithinCell(cellClickedLeft, cellClickedTop).length === 0;
-        if (noObjectToDrag && rectanglesCount < MAX_RECTANGLES_ALLOWED)
+        var objectsToDrag = getObjectsWithinCell(cellClickedLeft, cellClickedTop);
+        var noObjectToDrag = (objectsToDrag.length === 0);
+        if (noObjectToDrag)
         {
-            floorCanvas.add(new fabric.Rect({ 
-                left: cellClickedLeft, 
-                top: cellClickedTop, 
-                width: scaledGridStep, 
-                height: scaledGridStep, 
-                fill: '#aaa', 
-                originX: 'left', 
-                originY: 'top',
-                hasControls: false
-            }));
-            rectanglesCount++;
-
-            console.log(['new pin created at [', cellClickedLeft, ',', cellClickedTop, ']'].join(''));
+            if (rectanglesCount < MAX_RECTANGLES_ALLOWED)
+            {
+                addPinOnGrid(cellClickedLeft, cellClickedTop);
+            }
+            else
+            {
+                console.log('Max amount of pins allowed was reached');
+            }
+        }
+        else
+        {
+            changePinColor(objectsToDrag[0], COLOR_CATEGORY_3);
         }
     });
+
+    function changePinColor(pin, color)
+    {
+        pin.fill = color;
+        floorCanvas.renderAll();
+    }
+
+    function addPinOnGrid(left, top)
+    {
+        floorCanvas.add(new fabric.Rect({ 
+            left: left, 
+            top: top, 
+            width: scaledGridStep, 
+            height: scaledGridStep, 
+            fill: COLOR_CATEGORY_1, 
+            originX: 'left', 
+            originY: 'top',
+            hasControls: false
+        }));
+        rectanglesCount++;
+
+        console.log(['new pin created at [', left, ',', top, ']'].join(''));
+    }
 
     $("#btnZoomIn").click(function(){
         zoomIn();
