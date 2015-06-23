@@ -25,6 +25,8 @@ var scaleFactorApplied = 1;
 var currentCanvasScale = 1;
 var SCALE_MULTIPLYING_FACTOR = 1.2;
 var floorCanvas;
+var MAX_RECTANGLES_ALLOWED = 3;
+var rectanglesCount = 0;
 
 function initFloorCanvas()
 {
@@ -62,6 +64,7 @@ function initFloorCanvas()
           originY: 'top',
             hasControls: false
         }));
+        rectanglesCount++;
     });
 
     // snap to grid
@@ -80,7 +83,7 @@ function initFloorCanvas()
         var cellClickedTop = Math.trunc(options.e.layerY / scaledGridStep) * scaledGridStep;
 
         var noObjectToDrag = getObjectsWithinCell(cellClickedLeft, cellClickedTop).length === 0;
-        if (noObjectToDrag)
+        if (noObjectToDrag && rectanglesCount < MAX_RECTANGLES_ALLOWED)
         {
             floorCanvas.add(new fabric.Rect({ 
                 left: cellClickedLeft, 
@@ -92,6 +95,9 @@ function initFloorCanvas()
                 originY: 'top',
                 hasControls: false
             }));
+            rectanglesCount++;
+
+            console.log(['new pin created at [', cellClickedLeft, ',', cellClickedTop, ']'].join(''));
         }
     });
 
