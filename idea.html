@@ -19,41 +19,48 @@ canvas {
 </body>
 
 <script>
-var scaledGridStep = GRID_STEP_GRANULARITY = 10;
-var DEFAULT_MAX_PINS_ALLOWED = 1000;
-var GRID_DIMENSIONS = 800;
-var scaleFactorApplied = 1;
-var currentCanvasScale = 1;
-var SCALE_MULTIPLYING_FACTOR = 1.2;
-var floorCanvas;
-var maxPinsAllowed = 3;
-var rectanglesCount = 0;
-var selectedPin;
-var selectedOldScaleX;
-var selectedOldScaleY;
 
-var isReportingMode = false;
-
-var COLOR_CATEGORY_1 = '#00FF00';
-var COLOR_CATEGORY_2 = '#FF00FF';
-var COLOR_CATEGORY_3 = 'red';
-
-var arrayOfPins = [];
-
-function initFloorCanvas(usedForReporting)
+function FloorCanvasMap()
 {
-    isReportingMode = usedForReporting;
+    var self = this;
+    self.scaledGridStep = GRID_STEP_GRANULARITY = 10;
+    self.DEFAULT_MAX_PINS_ALLOWED = 1000;
+    self.GRID_DIMENSIONS = 800;
+    self.scaleFactorApplied = 1;
+    self.currentCanvasScale = 1;
+    self.SCALE_MULTIPLYING_FACTOR = 1.2;
+    self.floorCanvas;
+    self.maxPinsAllowed = 3;
+    self.rectanglesCount = 0;
+    self.selectedPin;
+    self.selectedOldScaleX;
+    self.selectedOldScaleY;
 
-    if (!isReportingMode)
+    self.reportingMode = false;
+
+    self.COLOR_CATEGORY_1 = '#00FF00';
+    self.COLOR_CATEGORY_2 = '#FF00FF';
+    self.COLOR_CATEGORY_3 = 'red';
+
+    self.arrayOfPins = [];
+}
+
+FloorCanvasMap.prototype.init = function(usedForReporting)
+{
+    var self = this;
+
+    self.reportingMode = usedForReporting;
+
+    if (!self.reportingMode)
     {
-        maxPinsAllowed = 1;
+        self.maxPinsAllowed = 1;
     }
     else
     {
-        maxPinsAllowed = DEFAULT_MAX_PINS_ALLOWED;
+        self.maxPinsAllowed = self.DEFAULT_MAX_PINS_ALLOWED;
     }
 
-    floorCanvas = new fabric.Canvas('floorDemoCanvas', { selection: false });
+    self.floorCanvas = new fabric.Canvas('floorDemoCanvas', { selection: false });
 
     fabric.Image.fromURL('floor1.png', function(img) {
           
@@ -63,30 +70,30 @@ function initFloorCanvas(usedForReporting)
           img.lockMovementX = true;
           img.lockMovementY = true;
 
-          floorCanvas.add(img);
+          self.floorCanvas.add(img);
 
-          if (isReportingMode)
+          if (self.reportingMode)
           {
             // cannot add new pins, they are restored from DB
-            addPinOnGrid(scaledGridStep,scaledGridStep);
+            self.addPinOnGrid(self.scaledGridStep, self.scaledGridStep);
           }
 
           // everything else needs to be added AFTER IMAGE else not visible
 
         // create grid
-        // var linesCount = GRID_DIMENSIONS / GRID_STEP_GRANULARITY;
+        var linesCount = self.GRID_DIMENSIONS / self.GRID_STEP_GRANULARITY;
 
-        // for (var lineIndex = 0; lineIndex < linesCount; lineIndex++) {
+        for (var lineIndex = 0; lineIndex < linesCount; lineIndex++) {
 
-        //   floorCanvas.add(new fabric.Line([ lineIndex * GRID_STEP_GRANULARITY, 0, lineIndex * GRID_STEP_GRANULARITY, GRID_DIMENSIONS], { stroke: '#ccc', selectable: false }));
+          self.floorCanvas.add(new fabric.Line([ lineIndex * self.GRID_STEP_GRANULARITY, 0, lineIndex * self.GRID_STEP_GRANULARITY, self.GRID_DIMENSIONS], { stroke: '#ccc', selectable: false }));
 
-        //   floorCanvas.add(new fabric.Line([ 0, lineIndex * GRID_STEP_GRANULARITY, GRID_DIMENSIONS, lineIndex * GRID_STEP_GRANULARITY], { stroke: '#ccc', selectable: false }))
-        // }
+          self.floorCanvas.add(new fabric.Line([ 0, lineIndex * self.GRID_STEP_GRANULARITY, self.GRID_DIMENSIONS, lineIndex * self.GRID_STEP_GRANULARITY], { stroke: '#ccc', selectable: false }))
+        }
     });
 
     // snap to grid
-    floorCanvas.on('object:moving', function(options) {
-        var gridFittedCoordinates = getScaledCellCoordinates(options.target.left, options.target.top);
+    self.floorCanvas.on('object:moving', function(options) {
+        var gridFittedCoordinates = self.getScaledCellCoordinates(options.target.left, options.target.top);
 
         if (gridFittedCoordinates.left < 0)
         {
@@ -98,14 +105,14 @@ function initFloorCanvas(usedForReporting)
             gridFittedCoordinates.top = 0;
         }
 
-        if ((gridFittedCoordinates.left + scaledGridStep) >= floorCanvas.width)
+        if ((gridFittedCoordinates.left + self.scaledGridStep) >= self.floorCanvas.width)
         {
-            gridFittedCoordinates.left = floorCanvas.width - scaledGridStep;
+            gridFittedCoordinates.left = self.floorCanvas.width - self.scaledGridStep;
         }
 
-        if ((gridFittedCoordinates.top + scaledGridStep) >= floorCanvas.height)
+        if ((gridFittedCoordinates.top + self.scaledGridStep) >= self.floorCanvas.height)
         {
-            gridFittedCoordinates.top = floorCanvas.height - scaledGridStep;
+            gridFittedCoordinates.top = self.floorCanvas.height - self.self.scaledGridStep;
         }
     
         options.target.set({
@@ -113,55 +120,41 @@ function initFloorCanvas(usedForReporting)
             top: gridFittedCoordinates.top
         });
 
-        console.log(['pin ', getPinId(options.target), ' has been dragged to a new location at [', gridFittedCoordinates.left, ',', gridFittedCoordinates.top, '].'].join(''));
+        console.log(['pin ', self.getPinId(options.target), ' has been dragged to a new location at [', gridFittedCoordinates.left, ',', gridFittedCoordinates.top, '].'].join(''));
     });
 
-    floorCanvas.on('object:selected', function(options) {
-        if (isReportingMode)
+    self.floorCanvas.on('object:selected', function(options) {
+        if (self.reportingMode)
         {
             // either other pin selected or selection cleared
             // selection:cleared will not happen because floor map will get selected
-            resetSelectedPin();
+            self.resetSelectedPin();
 
             if (options.target.type === "rect")
             {
-
-                selectedPin = options.target;
-                selectedOldScaleX = selectedPin.scaleX;
-                selectedOldScaleY = selectedPin.scaleY;
-                selectedPin.scaleX = 2;
-                selectedPin.scaleY = 2;
-                selectedPin.borderColor = 'blue';
+                self.selectedPin = options.target;
+                self.selectedOldScaleX = self.selectedPin.scaleX;
+                self.selectedOldScaleY = self.selectedPin.scaleY;
+                self.selectedPin.scaleX = 2;
+                self.selectedPin.scaleY = 2;
+                self.selectedPin.borderColor = 'blue';
             }
         }
     });
 
-    function resetSelectedPin()
-    {
-        console.log('selection cleared');
-        if (selectedPin != null)
-        {
-            selectedPin.scaleX = selectedOldScaleX;
-            selectedPin.scaleY = selectedOldScaleY;
-            selectedPin = null;
-            selectedOldScaleX = null;
-            selectedOldScaleY = null;
-        }
-    }
+    self.floorCanvas.on('mouse:down', function(options) {
+        var cellClickedLeft = Math.trunc(options.e.layerX / self.scaledGridStep) * self.scaledGridStep;
+        var cellClickedTop = Math.trunc(options.e.layerY / self.scaledGridStep) * self.scaledGridStep;
 
-    floorCanvas.on('mouse:down', function(options) {
-        var cellClickedLeft = Math.trunc(options.e.layerX / scaledGridStep) * scaledGridStep;
-        var cellClickedTop = Math.trunc(options.e.layerY / scaledGridStep) * scaledGridStep;
-
-        var objectsToDrag = getObjectsWithinCell(cellClickedLeft, cellClickedTop);
+        var objectsToDrag = self.getObjectsWithinCell(cellClickedLeft, cellClickedTop);
         var noObjectToDrag = (objectsToDrag.length === 0);
         if (noObjectToDrag)
         {
-            if (!isReportingMode)
+            if (!self.reportingMode)
             {
-                if (rectanglesCount < maxPinsAllowed)
+                if (self.rectanglesCount < self.maxPinsAllowed)
                 {
-                    addPinOnGrid(cellClickedLeft, cellClickedTop);
+                    self.addPinOnGrid(cellClickedLeft, cellClickedTop);
                 }
                 else
                 {
@@ -171,102 +164,126 @@ function initFloorCanvas(usedForReporting)
         }
         else
         {
-            changePinColor(objectsToDrag[0], COLOR_CATEGORY_3);
+            self.changePinColor(objectsToDrag[0], COLOR_CATEGORY_3);
         }
     });
 
-    function changePinColor(pin, color)
-    {
-        pin.fill = color;
-        floorCanvas.renderAll();
-
-        console.log(['pin ', getPinId(pin), ' has changed color.'].join(''));
-    }
-
-    function getPinId(pinObject)
-    {
-        var pinId;
-
-        var pinFound = _.filter(arrayOfPins, function(entry){
-            return entry.canvasPin === pinObject;
-        });
-
-        if (pinFound.length > 0)
-        {
-            pinId = pinFound[0].id;
-        }
-
-        return pinId;
-    }
-
-    function addPinOnGrid(left, top)
-    {
-        var pin = new fabric.Rect({ 
-            left: left, 
-            top: top, 
-            width: scaledGridStep, 
-            height: scaledGridStep, 
-            fill: COLOR_CATEGORY_1, 
-            originX: 'left', 
-            originY: 'top',
-            hasControls: false,
-            angle: 45
-        });
-
-        floorCanvas.add(pin);
-        rectanglesCount++;
-
-        arrayOfPins.push({id: rectanglesCount, canvasPin: pin});
-
-        console.log(['new pin ', rectanglesCount ,' created at [', left, ',', top, ']'].join(''));
-    }
-
     $("#btnZoomIn").click(function(){
-        zoomIn();
+        self.zoomIn();
     });
 
     $("#btnZoomOut").click(function(){
-        zoomOut();
+        self.zoomOut();
     });
 
     $("#btnResetZoom").click(function(){
-        resetZoom();
+        self.resetZoom();
     });
 
     $("#btnShow").click(function(){
-        _.each(arrayOfPins, function(pin){
+        _.each(self.arrayOfPins, function(pin){
             pin.canvasPin.visible = !pin.canvasPin.visible;
         });
 
-        floorCanvas.renderAll();
+        self.floorCanvas.renderAll();
     });
 }
 
-function zoomIn() {
-    applyScaleToGridAndObjects(SCALE_MULTIPLYING_FACTOR);
-}
-
-function zoomOut() {
-    applyScaleToGridAndObjects(1/SCALE_MULTIPLYING_FACTOR);  
-}
-
-function resetZoom() {
-    applyScaleToGridAndObjects(1/currentCanvasScale);
-
-    currentCanvasScale = 1;
-    scaleFactorApplied = 1;
-}
-
-function applyScaleToGridAndObjects(scaleValue)
+FloorCanvasMap.prototype.changePinColor = function(pin, color)
 {
-    scaleFactorApplied = scaleValue;
-    currentCanvasScale = currentCanvasScale * scaleValue;
-    scaledGridStep = scaledGridStep * scaleValue;
+    var self = this;
+    pin.fill = color;
+    self.floorCanvas.renderAll();
 
-    floorCanvas.setHeight(floorCanvas.getHeight() * scaleValue);
-    floorCanvas.setWidth(floorCanvas.getWidth() * scaleValue);
+    console.log(['pin ', self.getPinId(pin), ' has changed color.'].join(''));
+}
+
+FloorCanvasMap.prototype.getPinId = function(pinObject)
+{
+    var self = this;
+
+    var pinId;
+
+    var pinFound = _.filter(self.arrayOfPins, function(entry){
+        return entry.canvasPin === pinObject;
+    });
+
+    if (pinFound.length > 0)
+    {
+        pinId = pinFound[0].id;
+    }
+
+    return pinId;
+}
+
+FloorCanvasMap.prototype.addPinOnGrid = function(left, top)
+{
+    var self = this;
+
+    var pin = new fabric.Rect({ 
+        left: left, 
+        top: top, 
+        width: self.scaledGridStep, 
+        height: self.scaledGridStep, 
+        fill: self.COLOR_CATEGORY_1, 
+        originX: 'left', 
+        originY: 'top',
+        hasControls: false,
+        angle: 45
+    });
+
+    self.floorCanvas.add(pin);
+    self.rectanglesCount++;
+
+    self.arrayOfPins.push({id: self.rectanglesCount, canvasPin: pin});
+
+    console.log(['new pin ', self.rectanglesCount ,' created at [', left, ',', top, ']'].join(''));
+}
+
+FloorCanvasMap.prototype.resetSelectedPin = function()
+{
+    var self = this;
+    console.log('selection cleared');
+
+    if (self.selectedPin != null)
+    {
+        self.selectedPin.scaleX = self.selectedOldScaleX;
+        self.selectedPin.scaleY = self.selectedOldScaleY;
+        self.selectedPin = null;
+        self.selectedOldScaleX = null;
+        self.selectedOldScaleY = null;
+    }
+}
+
+FloorCanvasMap.prototype.zoomIn = function() {
+    var self = this;
+    self.applyScaleToGridAndObjects(self.SCALE_MULTIPLYING_FACTOR);
+}
+
+FloorCanvasMap.prototype.zoomOut = function() {
+    var self = this;
+    self.applyScaleToGridAndObjects(1/self.SCALE_MULTIPLYING_FACTOR);  
+}
+
+FloorCanvasMap.prototype.resetZoom = function() {
+    var self = this;
+    self.applyScaleToGridAndObjects(1/self.currentCanvasScale);
+
+    self.currentCanvasScale = 1;
+    self.scaleFactorApplied = 1;
+}
+
+FloorCanvasMap.prototype.applyScaleToGridAndObjects = function(scaleValue)
+{
+    var self = this;
+    self.scaleFactorApplied = scaleValue;
+    self.currentCanvasScale = self.currentCanvasScale * scaleValue;
+    self.scaledGridStep = self.scaledGridStep * scaleValue;
+
+    self.floorCanvas.setHeight(self.floorCanvas.getHeight() * scaleValue);
+    self.floorCanvas.setWidth(self.floorCanvas.getWidth() * scaleValue);
     
-    var objectsOnCanvas = floorCanvas.getObjects();
+    var objectsOnCanvas = self.floorCanvas.getObjects();
 
     _.each(objectsOnCanvas, function(object){
 
@@ -278,20 +295,22 @@ function applyScaleToGridAndObjects(scaleValue)
         object.setCoords();
     });
         
-    floorCanvas.renderAll();
+    self.floorCanvas.renderAll();
 }
 
-function getScaledCellCoordinates(left, top)
+FloorCanvasMap.prototype.getScaledCellCoordinates = function(left, top)
 {
+    var self = this;
     var squaredCoordinates = {};
-    squaredCoordinates.left = Math.round(left / scaledGridStep) * scaledGridStep;
-    squaredCoordinates.top = Math.round(top / scaledGridStep) * scaledGridStep;
+    squaredCoordinates.left = Math.round(left / self.scaledGridStep) * self.scaledGridStep;
+    squaredCoordinates.top = Math.round(top / self.scaledGridStep) * self.scaledGridStep;
     return squaredCoordinates;
 }
 
-function getObjectsWithinCell(left, top)
+FloorCanvasMap.prototype.getObjectsWithinCell = function(left, top)
 {
-    var objectsOnCanvas = floorCanvas.getObjects();
+    var self = this;
+    var objectsOnCanvas = self.floorCanvas.getObjects();
 
     // because we're working on a grid, no need to use a rectangle to find existing objects
     var objectsWithinCell = _.filter(objectsOnCanvas, function(object){
@@ -301,7 +320,8 @@ function getObjectsWithinCell(left, top)
     return objectsWithinCell;
 }
 
-initFloorCanvas(true);
+var map = new FloorCanvasMap();
+map.init(false);
 
 </script>
 </html>
