@@ -18,8 +18,7 @@ canvas {
 </body>
 
 <script>
-var GRID_STEP_GRANULARITY = 25;
-var scaledGridStep = 25;
+var scaledGridStep = GRID_STEP_GRANULARITY = 10;
 var GRID_DIMENSIONS = 800;
 var scaleFactorApplied = 1;
 var currentCanvasScale = 1;
@@ -28,9 +27,11 @@ var floorCanvas;
 var MAX_RECTANGLES_ALLOWED = 3;
 var rectanglesCount = 0;
 
-var COLOR_CATEGORY_1 = '#faa';
-var COLOR_CATEGORY_2 = '#ert';
-var COLOR_CATEGORY_3 = '#ccc';
+var COLOR_CATEGORY_1 = '#00FF00';
+var COLOR_CATEGORY_2 = '#FF00FF';
+var COLOR_CATEGORY_3 = 'red';
+
+var arrayOfPins = [];
 
 function initFloorCanvas()
 {
@@ -49,14 +50,14 @@ function initFloorCanvas()
           // everything else needs to be added AFTER IMAGE else not visible
 
         // create grid
-        var linesCount = GRID_DIMENSIONS / GRID_STEP_GRANULARITY;
+        // var linesCount = GRID_DIMENSIONS / GRID_STEP_GRANULARITY;
 
-        for (var lineIndex = 0; lineIndex < linesCount; lineIndex++) {
+        // for (var lineIndex = 0; lineIndex < linesCount; lineIndex++) {
 
-          floorCanvas.add(new fabric.Line([ lineIndex * GRID_STEP_GRANULARITY, 0, lineIndex * GRID_STEP_GRANULARITY, GRID_DIMENSIONS], { stroke: '#ccc', selectable: false }));
+        //   floorCanvas.add(new fabric.Line([ lineIndex * GRID_STEP_GRANULARITY, 0, lineIndex * GRID_STEP_GRANULARITY, GRID_DIMENSIONS], { stroke: '#ccc', selectable: false }));
 
-          floorCanvas.add(new fabric.Line([ 0, lineIndex * GRID_STEP_GRANULARITY, GRID_DIMENSIONS, lineIndex * GRID_STEP_GRANULARITY], { stroke: '#ccc', selectable: false }))
-        }
+        //   floorCanvas.add(new fabric.Line([ 0, lineIndex * GRID_STEP_GRANULARITY, GRID_DIMENSIONS, lineIndex * GRID_STEP_GRANULARITY], { stroke: '#ccc', selectable: false }))
+        // }
     });
 
     // snap to grid
@@ -87,6 +88,8 @@ function initFloorCanvas()
             left: gridFittedCoordinates.left,
             top: gridFittedCoordinates.top
         });
+
+        console.log(['pin ', getPinId(options.target), ' has been dragged to a new location at [', gridFittedCoordinates.left, ',', gridFittedCoordinates.top, '].'].join(''));
     });
 
     floorCanvas.on('mouse:down', function(options) {
@@ -117,11 +120,29 @@ function initFloorCanvas()
     {
         pin.fill = color;
         floorCanvas.renderAll();
+
+        console.log(['pin ', getPinId(pin), ' has changed color.'].join(''));
+    }
+
+    function getPinId(pinObject)
+    {
+        var pinId;
+
+        var pinFound = _.filter(arrayOfPins, function(entry){
+            return entry.canvasPin === pinObject;
+        });
+
+        if (pinFound.length > 0)
+        {
+            pinId = pinFound[0].id;
+        }
+
+        return pinId;
     }
 
     function addPinOnGrid(left, top)
     {
-        floorCanvas.add(new fabric.Rect({ 
+        var pin = new fabric.Rect({ 
             left: left, 
             top: top, 
             width: scaledGridStep, 
@@ -129,11 +150,16 @@ function initFloorCanvas()
             fill: COLOR_CATEGORY_1, 
             originX: 'left', 
             originY: 'top',
-            hasControls: false
-        }));
+            hasControls: false,
+            angle: 45
+        });
+
+        floorCanvas.add(pin);
         rectanglesCount++;
 
-        console.log(['new pin created at [', left, ',', top, ']'].join(''));
+        arrayOfPins.push({id: rectanglesCount, canvasPin: pin});
+
+        console.log(['new pin ', rectanglesCount ,' created at [', left, ',', top, ']'].join(''));
     }
 
     $("#btnZoomIn").click(function(){
