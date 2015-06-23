@@ -13,6 +13,7 @@ canvas {
 	<button id="btnZoomIn">ZoomIn</button> 
 	<button id="btnZoomOut">ZoomOut</button> 
 	<button id="btnResetZoom">Reset Zoom</button>
+    <button id="btnShow">Toggle Show/Hide</button>
 	<br/>
 	<canvas id="floorDemoCanvas" width="800" height="800"></canvas>
 </body>
@@ -26,6 +27,9 @@ var SCALE_MULTIPLYING_FACTOR = 1.2;
 var floorCanvas;
 var MAX_RECTANGLES_ALLOWED = 3;
 var rectanglesCount = 0;
+var selectedPin;
+var selectedOldScaleX;
+var selectedOldScaleY;
 
 var COLOR_CATEGORY_1 = '#00FF00';
 var COLOR_CATEGORY_2 = '#FF00FF';
@@ -91,6 +95,36 @@ function initFloorCanvas()
 
         console.log(['pin ', getPinId(options.target), ' has been dragged to a new location at [', gridFittedCoordinates.left, ',', gridFittedCoordinates.top, '].'].join(''));
     });
+
+    floorCanvas.on('object:selected', function(options) {
+        // either other pin selected or selection cleared
+        // selection:cleared will not happen because floor map will get selected
+        resetSelectedPin();
+
+        if (options.target.type === "rect")
+        {
+
+            selectedPin = options.target;
+            selectedOldScaleX = selectedPin.scaleX;
+            selectedOldScaleY = selectedPin.scaleY;
+            selectedPin.scaleX = 2;
+            selectedPin.scaleY = 2;
+            selectedPin.borderColor = 'blue';
+        }
+    });
+
+    function resetSelectedPin()
+    {
+        console.log('selection cleared');
+        if (selectedPin != null)
+        {
+            selectedPin.scaleX = selectedOldScaleX;
+            selectedPin.scaleY = selectedOldScaleY;
+            selectedPin = null;
+            selectedOldScaleX = null;
+            selectedOldScaleY = null;
+        }
+    }
 
     floorCanvas.on('mouse:down', function(options) {
 
@@ -172,6 +206,14 @@ function initFloorCanvas()
 
     $("#btnResetZoom").click(function(){
         resetZoom();
+    });
+
+    $("#btnShow").click(function(){
+        _.each(arrayOfPins, function(pin){
+            pin.canvasPin.visible = !pin.canvasPin.visible;
+        });
+
+        floorCanvas.renderAll();
     });
 }
 
