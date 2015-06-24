@@ -75,7 +75,7 @@ FloorCanvasMap.prototype.init = function(usedForReporting)
           if (self.reportingMode)
           {
             // cannot add new pins, they are restored from DB
-            self.addPinOnGrid(self.scaledGridStep, self.scaledGridStep);
+            self.addPinOnGrid(629.9999999999999,80);
           }
 
           // everything else needs to be added AFTER IMAGE else not visible
@@ -120,7 +120,8 @@ FloorCanvasMap.prototype.init = function(usedForReporting)
             top: gridFittedCoordinates.top
         });
 
-        console.log(['pin ', self.getPinId(options.target), ' has been dragged to a new location at [', gridFittedCoordinates.left, ',', gridFittedCoordinates.top, '].'].join(''));
+        // these are the coordinates that will be saved
+        console.log(['pin ', self.getPinId(options.target), ' has been dragged to a new location at [', options.target.left/self.currentCanvasScale, ',', options.target.top/self.currentCanvasScale, '].'].join(''));
     });
 
     self.floorCanvas.on('object:selected', function(options) {
@@ -278,7 +279,9 @@ FloorCanvasMap.prototype.applyScaleToGridAndObjects = function(scaleValue)
     var self = this;
     self.scaleFactorApplied = scaleValue;
     self.currentCanvasScale = self.currentCanvasScale * scaleValue;
+    console.log('current canvas scale is '+ self.currentCanvasScale);
     self.scaledGridStep = self.scaledGridStep * scaleValue;
+    console.log('current grid cell scaled is '+ self.scaledGridStep);
 
     self.floorCanvas.setHeight(self.floorCanvas.getHeight() * scaleValue);
     self.floorCanvas.setWidth(self.floorCanvas.getWidth() * scaleValue);
