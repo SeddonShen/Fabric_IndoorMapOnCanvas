@@ -23,7 +23,7 @@ canvas {
 function FloorCanvasMap()
 {
     var self = this;
-    self.scaledGridStep = GRID_STEP_GRANULARITY = 10;
+    self.scaledGridStep = self.GRID_STEP_GRANULARITY = 10;
     self.GRID_DIMENSIONS = 800;
     self.scaleFactorApplied = 1;
     self.currentCanvasScale = 1;
@@ -67,61 +67,34 @@ FloorCanvasMap.prototype.init = function(usedForReporting)
 
           self.floorCanvas.add(img);
 
-          if (self.reportingMode)
-          {
-            // cannot add new pins, they are restored from DB
-            self.addPinOnGrid(629.9999999999999,80,self.COLOR_CATEGORY_1);
-          }
-          else
-          {
-            // pins restored not to interact, but to show what else is there
-            self.addPinOnGrid(629.9999999999999,80,self.RESERVED_DISABLED_COLOR);
-          }
-
           // everything else needs to be added AFTER IMAGE else not visible
 
         // create grid
         var linesCount = self.GRID_DIMENSIONS / self.GRID_STEP_GRANULARITY;
 
-        for (var lineIndex = 0; lineIndex < linesCount; lineIndex++) {
+        for (var lineIndex = 0; lineIndex < linesCount; lineIndex++) 
+        {
+            self.floorCanvas.add(new fabric.Line([ lineIndex * self.GRID_STEP_GRANULARITY, 0, lineIndex * self.GRID_STEP_GRANULARITY, self.GRID_DIMENSIONS], { stroke: '#ccc', selectable: false }));
 
-          self.floorCanvas.add(new fabric.Line([ lineIndex * self.GRID_STEP_GRANULARITY, 0, lineIndex * self.GRID_STEP_GRANULARITY, self.GRID_DIMENSIONS], { stroke: '#ccc', selectable: false }));
-
-          self.floorCanvas.add(new fabric.Line([ 0, lineIndex * self.GRID_STEP_GRANULARITY, self.GRID_DIMENSIONS, lineIndex * self.GRID_STEP_GRANULARITY], { stroke: '#ccc', selectable: false }))
+            self.floorCanvas.add(new fabric.Line([ 0, lineIndex * self.GRID_STEP_GRANULARITY, self.GRID_DIMENSIONS, lineIndex * self.GRID_STEP_GRANULARITY], { stroke: '#ccc', selectable: false }));
         }
+
+        if (self.reportingMode)
+        {
+            // cannot add new pins, they are restored from DB
+            self.addPinOnGrid(629.9999999999999,80,self.COLOR_CATEGORY_1);
+        }
+        else
+        {
+            // pins restored not to interact, but to show what else is there
+            self.addPinOnGrid(629.9999999999999, 80, self.RESERVED_DISABLED_COLOR);
+        }
+
     });
 
     // snap to grid
     self.floorCanvas.on('object:moving', function(options) {
-        var gridFittedCoordinates = self.getScaledCellCoordinates(options.target.left, options.target.top);
-
-        if (gridFittedCoordinates.left < 0)
-        {
-            gridFittedCoordinates.left = 0;
-        }
-
-        if (gridFittedCoordinates.top < 0)
-        {
-            gridFittedCoordinates.top = 0;
-        }
-
-        if ((gridFittedCoordinates.left + self.scaledGridStep) >= self.floorCanvas.width)
-        {
-            gridFittedCoordinates.left = self.floorCanvas.width - self.scaledGridStep;
-        }
-
-        if ((gridFittedCoordinates.top + self.scaledGridStep) >= self.floorCanvas.height)
-        {
-            gridFittedCoordinates.top = self.floorCanvas.height - self.scaledGridStep;
-        }
-    
-        options.target.set({
-            left: gridFittedCoordinates.left,
-            top: gridFittedCoordinates.top
-        });
-
-        // these are the coordinates that will be saved
-        console.log(['pin ', self.getPinId(options.target), ' has been dragged to a new location at [', options.target.left/self.currentCanvasScale, ',', options.target.top/self.currentCanvasScale, '].'].join(''));
+        self.movePin(options.target, options.target.left, options.target.top);
     });
 
     self.floorCanvas.on('object:selected', function(options) {
@@ -188,6 +161,49 @@ FloorCanvasMap.prototype.init = function(usedForReporting)
 
         self.floorCanvas.renderAll();
     });
+}
+
+FloorCanvasMap.prototype.movePin = function(pin, left, top)
+{
+    var self = this;
+    var gridFittedCoordinates = self.getScaledCellCoordinates(left, top);
+
+    if (gridFittedCoordinates.left < 0)
+    {
+        gridFittedCoordinates.left = 0;
+    }
+
+    if (gridFittedCoordinates.top < 0)
+    {
+        gridFittedCoordinates.top = 0;
+    }
+
+    if ((gridFittedCoordinates.left + self.scaledGridStep) >= self.floorCanvas.width)
+    {
+        gridFittedCoordinates.left = self.floorCanvas.width - self.scaledGridStep;
+    }
+
+    if ((gridFittedCoordinates.top + self.scaledGridStep) >= self.floorCanvas.height)
+    {
+        gridFittedCoordinates.top = self.floorCanvas.height - self.scaledGridStep;
+    }
+
+    var objectsOnDestinationCell = self.getObjectsWithinCell(gridFittedCoordinates.left, gridFittedCoordinates.top);
+
+    if (objectsOnDestinationCell.length === 0)
+    {
+        pin.set({
+            left: gridFittedCoordinates.left,
+            top: gridFittedCoordinates.top
+        });
+
+        // these are the coordinates that will be saved
+        console.log(['pin ', self.getPinId(pin), ' has been dragged to a new location at [', pin.left/self.currentCanvasScale, ',', pin.top/self.currentCanvasScale, '].'].join(''));
+    }
+    else
+    {
+        self.movePin(pin, left - self.GRID_STEP_GRANULARITY, top - self.GRID_STEP_GRANULARITY);
+    }
 }
 
 FloorCanvasMap.prototype.changePinColor = function(pin, color)
@@ -318,8 +334,8 @@ FloorCanvasMap.prototype.getScaledCellCoordinates = function(left, top)
 {
     var self = this;
     var squaredCoordinates = {};
-    squaredCoordinates.left = Math.round(left / self.scaledGridStep) * self.scaledGridStep;
-    squaredCoordinates.top = Math.round(top / self.scaledGridStep) * self.scaledGridStep;
+    squaredCoordinates.left = Math.ceil(left / self.scaledGridStep) * self.scaledGridStep;
+    squaredCoordinates.top = Math.ceil(top / self.scaledGridStep) * self.scaledGridStep;
     return squaredCoordinates;
 }
 
