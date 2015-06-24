@@ -24,23 +24,27 @@ function FloorCanvasMap()
 {
     var self = this;
     self.scaledGridStep = GRID_STEP_GRANULARITY = 10;
-    self.DEFAULT_MAX_PINS_ALLOWED = 1000;
     self.GRID_DIMENSIONS = 800;
     self.scaleFactorApplied = 1;
     self.currentCanvasScale = 1;
     self.SCALE_MULTIPLYING_FACTOR = 1.2;
+
     self.floorCanvas;
-    self.maxPinsAllowed = 3;
-    self.rectanglesCount = 0;
+
+    self.pinsCount = 0;
+
     self.selectedPin;
     self.selectedOldScaleX;
     self.selectedOldScaleY;
+
+    self.createdPin;
 
     self.reportingMode = false;
 
     self.COLOR_CATEGORY_1 = '#00FF00';
     self.COLOR_CATEGORY_2 = '#FF00FF';
     self.COLOR_CATEGORY_3 = 'red';
+    self.RESERVED_DISABLED_COLOR = 'darkblue';
 
     self.arrayOfPins = [];
 }
@@ -50,15 +54,6 @@ FloorCanvasMap.prototype.init = function(usedForReporting)
     var self = this;
 
     self.reportingMode = usedForReporting;
-
-    if (!self.reportingMode)
-    {
-        self.maxPinsAllowed = 1;
-    }
-    else
-    {
-        self.maxPinsAllowed = self.DEFAULT_MAX_PINS_ALLOWED;
-    }
 
     self.floorCanvas = new fabric.Canvas('floorDemoCanvas', { selection: false });
 
@@ -75,7 +70,12 @@ FloorCanvasMap.prototype.init = function(usedForReporting)
           if (self.reportingMode)
           {
             // cannot add new pins, they are restored from DB
-            self.addPinOnGrid(629.9999999999999,80);
+            self.addPinOnGrid(629.9999999999999,80,self.COLOR_CATEGORY_1);
+          }
+          else
+          {
+            // pins restored not to interact, but to show what else is there
+            self.addPinOnGrid(629.9999999999999,80,self.RESERVED_DISABLED_COLOR);
           }
 
           // everything else needs to be added AFTER IMAGE else not visible
@@ -148,24 +148,24 @@ FloorCanvasMap.prototype.init = function(usedForReporting)
         var cellClickedTop = Math.trunc(options.e.layerY / self.scaledGridStep) * self.scaledGridStep;
 
         var objectsToDrag = self.getObjectsWithinCell(cellClickedLeft, cellClickedTop);
-        var noObjectToDrag = (objectsToDrag.length === 0);
-        if (noObjectToDrag)
+
+        var noExistingPinToMove = (objectsToDrag.length === 0);
+        if (noExistingPinToMove)
         {
             if (!self.reportingMode)
             {
-                if (self.rectanglesCount < self.maxPinsAllowed)
+                if (self.createdPin == null)
                 {
-                    self.addPinOnGrid(cellClickedLeft, cellClickedTop);
-                }
-                else
-                {
-                    console.log('Max amount of pins allowed was reached');
+                    self.addPinOnGrid(cellClickedLeft, cellClickedTop, self.COLOR_CATEGORY_1);
                 }
             }
         }
         else
         {
-            self.changePinColor(objectsToDrag[0], self.COLOR_CATEGORY_3);
+            if (objectsToDrag[0].fill !== self.RESERVED_DISABLED_COLOR)
+            {
+                self.changePinColor(objectsToDrag[0], self.COLOR_CATEGORY_3);
+            }
         }
     });
 
@@ -217,7 +217,7 @@ FloorCanvasMap.prototype.getPinId = function(pinObject)
     return pinId;
 }
 
-FloorCanvasMap.prototype.addPinOnGrid = function(left, top)
+FloorCanvasMap.prototype.addPinOnGrid = function(left, top, color)
 {
     var self = this;
 
@@ -226,7 +226,7 @@ FloorCanvasMap.prototype.addPinOnGrid = function(left, top)
         top: top, 
         width: self.scaledGridStep, 
         height: self.scaledGridStep, 
-        fill: self.COLOR_CATEGORY_1, 
+        fill: color, 
         originX: 'left', 
         originY: 'top',
         hasControls: false//,
@@ -234,11 +234,24 @@ FloorCanvasMap.prototype.addPinOnGrid = function(left, top)
     });
 
     self.floorCanvas.add(pin);
-    self.rectanglesCount++;
+    self.pinsCount++;
 
-    self.arrayOfPins.push({id: self.rectanglesCount, canvasPin: pin});
+    self.arrayOfPins.push({id: self.pinsCount, canvasPin: pin});
 
-    console.log(['new pin ', self.rectanglesCount ,' created at [', left, ',', top, ']'].join(''));
+    console.log(['new pin ', self.pinsCount ,' created at [', left, ',', top, ']'].join(''));
+
+    if (!self.reportingMode)
+    {
+        if (color !== self.RESERVED_DISABLED_COLOR)
+        {
+            self.createdPin = pin;
+        }
+        else
+        {
+            pin.lockMovementX = true;
+            pin.lockMovementY = true;
+        }
+    }
 }
 
 FloorCanvasMap.prototype.resetSelectedPin = function()
@@ -317,14 +330,14 @@ FloorCanvasMap.prototype.getObjectsWithinCell = function(left, top)
 
     // because we're working on a grid, no need to use a rectangle to find existing objects
     var objectsWithinCell = _.filter(objectsOnCanvas, function(object){
-        return object.left === left && object.top === top;
+        return Math.ceil(object.left) === Math.ceil(left) && Math.ceil(object.top) === Math.ceil(top);
     });
 
     return objectsWithinCell;
 }
 
 var map = new FloorCanvasMap();
-map.init(true);
+map.init(false);
 
 </script>
 </html>
