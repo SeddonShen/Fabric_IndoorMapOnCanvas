@@ -237,6 +237,16 @@ FloorCanvasMap.prototype.addPinOnGrid = function(left, top, color)
 {
     var self = this;
 
+    var lockMovements = false;
+
+    if (!self.reportingMode)
+    {
+        if (color === self.RESERVED_DISABLED_COLOR)
+        {
+            lockMovements = true;  
+        }
+    }
+
     var pin = new fabric.Rect({ 
         left: left, 
         top: top, 
@@ -245,29 +255,32 @@ FloorCanvasMap.prototype.addPinOnGrid = function(left, top, color)
         fill: color, 
         originX: 'left', 
         originY: 'top',
-        hasControls: false//,
+        hasControls: false,
+        hasBorders: false,
+        hasRotatingPoint: false,
+        lockMovementX: lockMovements,
+        lockMovementY: lockMovements,
+        selectable: !lockMovements//,
         //angle: 45
     });
+    self.pinsCount++;
 
     self.floorCanvas.add(pin);
-    self.pinsCount++;
 
     self.arrayOfPins.push({id: self.pinsCount, canvasPin: pin});
 
-    console.log(['new pin ', self.pinsCount ,' created at [', left, ',', top, ']'].join(''));
+    console.log(['New pin ', self.pinsCount ,' created at [', left, ',', top, ']'].join(''));
 
-    if (!self.reportingMode)
+    if (lockMovements)
     {
-        if (color !== self.RESERVED_DISABLED_COLOR)
-        {
-            self.createdPin = pin;
-        }
-        else
-        {
-            pin.lockMovementX = true;
-            pin.lockMovementY = true;
-        }
+        console.log(['Pin ', self.pinsCount ,' cannot be moved.'].join(''));
     }
+    else
+    {
+        self.createdPin = pin;
+    }
+
+    self.floorCanvas.renderAll();
 }
 
 FloorCanvasMap.prototype.resetSelectedPin = function()
@@ -346,7 +359,7 @@ FloorCanvasMap.prototype.getObjectsWithinCell = function(left, top)
 
     // because we're working on a grid, no need to use a rectangle to find existing objects
     var objectsWithinCell = _.filter(objectsOnCanvas, function(object){
-        return Math.ceil(object.left) === Math.ceil(left) && Math.ceil(object.top) === Math.ceil(top);
+        return (object.type === "rect" && Math.ceil(object.left) === Math.ceil(left) && Math.ceil(object.top) === Math.ceil(top));
     });
 
     return objectsWithinCell;
