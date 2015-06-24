@@ -70,14 +70,14 @@ FloorCanvasMap.prototype.init = function(usedForReporting)
           // everything else needs to be added AFTER IMAGE else not visible
 
         // create grid
-        var linesCount = self.GRID_DIMENSIONS / self.GRID_STEP_GRANULARITY;
+        // var linesCount = self.GRID_DIMENSIONS / self.GRID_STEP_GRANULARITY;
 
-        for (var lineIndex = 0; lineIndex < linesCount; lineIndex++) 
-        {
-            self.floorCanvas.add(new fabric.Line([ lineIndex * self.GRID_STEP_GRANULARITY, 0, lineIndex * self.GRID_STEP_GRANULARITY, self.GRID_DIMENSIONS], { stroke: '#ccc', selectable: false }));
+        // for (var lineIndex = 0; lineIndex < linesCount; lineIndex++) 
+        // {
+        //     self.floorCanvas.add(new fabric.Line([ lineIndex * self.GRID_STEP_GRANULARITY, 0, lineIndex * self.GRID_STEP_GRANULARITY, self.GRID_DIMENSIONS], { stroke: '#ccc', selectable: false }));
 
-            self.floorCanvas.add(new fabric.Line([ 0, lineIndex * self.GRID_STEP_GRANULARITY, self.GRID_DIMENSIONS, lineIndex * self.GRID_STEP_GRANULARITY], { stroke: '#ccc', selectable: false }));
-        }
+        //     self.floorCanvas.add(new fabric.Line([ 0, lineIndex * self.GRID_STEP_GRANULARITY, self.GRID_DIMENSIONS, lineIndex * self.GRID_STEP_GRANULARITY], { stroke: '#ccc', selectable: false }));
+        // }
 
         if (self.reportingMode)
         {
